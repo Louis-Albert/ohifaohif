@@ -1,0 +1,22 @@
+$scopeFile = ".\scope.txt"
+$outputDir = ".\results"
+if (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir | Out-Null }
+$nmapOptions = @("-vvv","--open","--reason","-Pn","-sT","-sV","--top-ports","100")
+try { $null = & nmap -h 2>$null } catch { Write-Error "nmap not found in PATH."; exit 1 }
+function Get-SafeName { param([string]$input) $safe = $input.Trim() -replace '[\\/:*?"<>| ]','_'; if ($safe.Length -gt 64) { $safe = $safe.Substring(0,64) }; return $safe }
+foreach ($line in Get-Content $scopeFile) {
+    $line = $line.Trim()
+    if ([string]::IsNullOrWhiteSpace($line)) { continue }
+    if ($line.StartsWith("#")) { continue }
+    $target = $line
+    $safeName = Get-SafeName -input $target
+    $outBase = Join-Path $outputDir ("top_100-" + $safeName)
+    if (Test-Path ($outBase + ".nmap")) { continue }
+    $args = @()
+    $args += $nmapOptions
+    $args += "-oA"
+    $args += $outBase
+    $args += $target
+    try { & nmap @args; $exitCode = $LASTEXITCODE } catch { Write-Warning "Error running nmap for $target : $_"; $exitCode = 1 }
+    if ($exitCode -ne 0) { Write-Warning "nmap returned exit code $exitCode for $target." }
+}
