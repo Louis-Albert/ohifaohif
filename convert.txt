@@ -1,0 +1,1 @@
+[System.IO.File]::WriteAllBytes('C:\Users\XXX\Desktop\XXX\g.ps1', [System.convert]::FromBase64String((Get-Content -Path 'g.txt' -Raw)))
